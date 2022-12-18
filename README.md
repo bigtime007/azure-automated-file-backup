@@ -1,2 +1,2 @@
 # azure-automated-file-backup
-Backup a local folder on your computer automatically .
+Backup and Sync a local folder on your computer automatically to cloud with multiple endpoints.
