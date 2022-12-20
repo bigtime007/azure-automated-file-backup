@@ -1,6 +1,8 @@
+#https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/cosmos/azure-cosmos/samples/examples.py
 from azure.cosmos import CosmosClient, PartitionKey
 from azure.core.exceptions import AzureError
 import logging
+from config import config
 
 log_name = 'app.log'
 logger = logging.getLogger(__name__)
@@ -262,10 +264,9 @@ class AzCosmosContainer:
 
 if __name__ == "__main__":
 
-    
-    #vars
-    url = 'url'
-    key = 'key'
+    params = config()
+    url = params["url"]
+    key = params["key"]    
 
     container_name = "file-tracker"
     database_name = "file-tracker-db"
@@ -284,12 +285,12 @@ if __name__ == "__main__":
     #print(file_table.add_update_dictionary({'foler example\\New Rich Text Document.rtf': 1670641367.9569840}))
     #print(file_table.scan_all_items)
     #print(file_table.add_update_item(id_key_val="myfile2.txt",attr_val=464554564588))
-    print(file_table.add_update_dictionary(dictionary=dictionary))
+    #print(file_table.add_update_dictionary(dictionary=dictionary))
     #print(file_table.delete_item("folder\\myfile2.txt"))
     print(file_table.scan_all_items)
     #file_table.delete_item_dict(file_table.scan_all_items)
     
     
-    file_table_2 = AzCosmosContainer(url=url, key=key, database_name=database_name, container_name="file-tracker-2")
-    file_table_2.create_load_db
-    file_table_2.create_load_container
+    ##file_table_2 = AzCosmosContainer(url=url, key=key, database_name=database_name, container_name="file-tracker-2")
+    #file_table_2.create_load_db
+    #file_table_2.create_load_container

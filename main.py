@@ -1,9 +1,15 @@
-import os, time
+"""
+***Know Bugs*** (1.) When windows Office changes file initially the will look like the following => '~$w Microsoft Word Document.docx'
+when in fact should be => 'New Microsoft Word Document.docx' when os scans the dir it will find this 
+and report a change and then update file to find its now missing and throw a error:
+
+"""
+import pdb
+import os, time, json, logging
 import azStorage 
 import azCosmosContainer
-import json
 from config import config
-import logging
+
 
 log_name = 'app.log'
 logger = logging.getLogger(__name__)
@@ -65,11 +71,7 @@ class FileTracker:
         
     @property
     def file_time_list(self):
-        """_summary_
 
-        Returns:
-            callable: _description_
-        """
         file_list = self.file_list
         time_list = [os.path.getmtime(self.working_dir+file) for file in file_list]
         
@@ -104,19 +106,30 @@ class FileTracker:
             data.write(record)
     
     
-    def delete_files(self, file_list):
+    def delete_files(self, file_list): 
         
         for file in file_list:
-            
-            if file in self.file_list:
-            
-                os.remove(self.working_dir + file)
-            
-            else:
+
                 
-                print("File already Removed")
-        
-        return "Files Deleted."
+            # Format path
+            file_path = os.path.join(self.working_dir, file)
+            # If file exists, delete it.
+            if os.path.isfile(path=file_path):
+                os.remove(path=file_path)
+                logger.info("Success: %s file removed" % file_path)
+                
+            else:
+                # If it fails, inform the user.
+                print("Error: %s file not found" % file_path)
+                logger.error("Error: %s file not found" % file_path)
+                
+
+            # Remove DIR   
+            folder_path = file_path.replace(os.path.basename(file_path), '')
+            if len(os.listdir(path=folder_path)) == 0:
+                os.rmdir(path=folder_path, dir_fd = None)
+                logger.info("Success: %s folder removed" % folder_path)
+                
     
     @property
     def backup_svc(self):
@@ -131,7 +144,7 @@ class FileTracker:
         before_local = self.before_save_local
         after_local = self.file_time_list
   
-        logger.info("Scanning DB for Changes")
+        logger.info("Scanning DB for Cloud Changes")
         before_cloud = self.db_resource.scan_all_items
         after_cloud = self.storage_resource.blob_file_time_list 
         
@@ -139,7 +152,6 @@ class FileTracker:
         print(f"Local Directory file count before: {len(before_local)}")
         logger.info(f"Local Directory file count before: {len(before_local)}")
       
-    
         file_time_added_cloud = {key: value for key, value in after_cloud.items() if key not in before_cloud}
         file_time_removed_cloud = {key: value for key, value in before_cloud.items() if key not in after_cloud}
         file_time_changed_cloud = {key: value for key,value in after_cloud.items() if key in dict(
@@ -151,8 +163,9 @@ class FileTracker:
                     set(before_local.items()) - set(after_local.items()))} 
         file_time_changed_local = {key: value for key,value in file_time_changed.items() if key not in file_time_changed_cloud}
         
-        ####################################################
-        # before_cloud vs after_cloud
+        ###################################################
+        # before_cloud vs after_cloud if Added
+        #pdb.set_trace()
         if file_time_added_cloud:
         # Action: download from remote storage. For: Added
             print("|1| Cloud Added... Downloading: ", ", ".join(file_time_added_cloud.keys()))
@@ -164,7 +177,6 @@ class FileTracker:
             # Function to update DB
             db_cloud_add = self.storage_resource.blob_file_select_time_list(file_time_added_cloud.keys())
             print(self.db_resource.add_update_dictionary(db_cloud_add))
-            
         ####################################################
         # Check to see what was removed by another client in cloud.
         if file_time_removed_cloud: 
@@ -175,10 +187,9 @@ class FileTracker:
             print(self.delete_files(file_time_removed_cloud.keys()))
             [after_local.pop(key) for key in file_time_removed_cloud.keys()]
             # Function to update DB
-            print(self.db_resource.delete_item_list(file_time_removed_cloud.keys()))
-            
+            print(self.db_resource.delete_item_list(file_time_removed_cloud.keys())) 
         ####################################################
-        # What has changed in Cloud since last scan
+        # What existing files have changed in Cloud since last scan
         if file_time_changed_cloud:
         # Action: upload to Storage 
             print("|3| Cloud Changed ", ", ".join(file_time_changed_cloud.keys()))
@@ -189,10 +200,9 @@ class FileTracker:
             self.file_select_times(file_list=file_time_changed_cloud.keys(), after_local=after_local)
             # Function to update DB
             db_cloud_changed = self.storage_resource.blob_file_select_time_list(file_time_changed_cloud.keys())
-            print(self.db_resource.add_update_dictionary(db_cloud_changed))
-            
+            print(self.db_resource.add_update_dictionary(db_cloud_changed))   
         ####################################################
-        # file added to local 
+        # files added to local 
         if file_time_added_local:
         # Action: upload to cloud and update db
             print("|4| Local Added, Upload to Cloud: ", ", ".join(file_time_added_local.keys()))
@@ -201,9 +211,9 @@ class FileTracker:
             print(self.storage_resource.put_list(file_time_added_local.keys()))
             # Function to update DB with current values
             db_cloud_add = self.storage_resource.blob_file_select_time_list(file_time_added_local.keys())
-            print(self.db_resource.add_update_dictionary(db_cloud_add))
-            
+            print(self.db_resource.add_update_dictionary(db_cloud_add))  
         ####################################################
+        # file removed from local
         if file_time_removed_local:
         # Action: Remove both object(s) from storage and Entry(s) from DB.
             print("|5| Local Removed.. Delete Cloud: ", ", ".join(file_time_removed_local.keys()))
@@ -211,9 +221,11 @@ class FileTracker:
             # Function to Remove file for Remote Storage
             print(self.storage_resource.delete_list(file_time_removed_local.keys()))
             # Function to Remove Entry from DB
-            print(self.db_resource.delete_item_list(file_time_removed_local.keys()))
-            
+            #db_cloud_remove = self.storage_resource.blob_file_select_time_list(file_time_removed_local.keys())
+            #print('Debug', db_cloud_remove)
+            print(self.db_resource.delete_item_list(file_time_removed_local.keys()))   
         ####################################################
+        # Existing file have changed in local.
         if  file_time_changed_local:
         # Action update files to storage if files were not changed in storage.
             print("|6| Local Changed.. Update to Cloud: ", ", ".join(file_time_changed_local.keys()))
@@ -223,7 +235,6 @@ class FileTracker:
             # func to update DB
             db_cloud_changed = self.storage_resource.blob_file_select_time_list(file_time_changed_local.keys())
             print(self.db_resource.add_update_dictionary(db_cloud_changed))
-            
         ####################################################
         else:
             print('-----------------------------------------------------------------------------------')
@@ -231,13 +242,11 @@ class FileTracker:
             logger.info("No Local or Cloud File Changes Detected..")
             print('-----------------------------------------------------------------------------------')
                
-        # Saves Changes to after_local
-        self.after_save_local(after_local)
+        self.after_save_local(after_local) # Saves Changes to after_local
                 
         print(f'Local Directory file count after: {len(after_local)}')   
         logger.info(f'Local Directory file count after: {len(after_local)}')
         print('-----------------------------------------------------------------------------------')
-        
         print('All Done waiting:', f'{self.t_sec} seconds.')
         logger.info(f'All Done waiting:{self.t_sec} seconds.')
         time.sleep(self.t_sec)

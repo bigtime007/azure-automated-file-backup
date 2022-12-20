@@ -1,8 +1,9 @@
+# https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/storage/azure-storage-blob/samples
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import AzureError
 from azure.storage.blob import BlobClient
-import logging
-
+import logging, os, pdb
+from config import config
 
 log_name = 'app.log'
 logger = logging.getLogger(__name__)
@@ -217,6 +218,27 @@ class AZBlobStorage:
             FileObject: downloads to specific folder 
         """
         try:    
+            
+            path = file_name.replace(os.path.basename(file_name), '')
+            
+            if path:
+
+                path = os.path.join(self.working_dir, path)
+
+                if os.path.exists(path=path) == False:
+                    os.mkdir(path,)
+                    logger.info("Success: %s mkdir:" % path)
+                    print('mkdir:', path)
+
+                else:
+                    logger.info("iSpath: %s no mkdir done:" % path)
+                    print("iSpath:", path)
+                    
+            else:
+                print("no sub dir")
+                pass 
+            
+            
             with open(self.working_dir + file_name, "wb") as data:
                 
                 blob_client = BlobClient.from_connection_string(conn_str=self.conn_str, container_name=self.container, blob_name=file_name)
@@ -249,13 +271,32 @@ class AZBlobStorage:
         response_list = []
         
         try:
-
+            
             for file_name in file_list:
                 
-                blob_client = BlobClient.from_connection_string(conn_str=self.conn_str, container_name=self.container, blob_name=file_name)
-                    
-                with open(self.working_dir + file_name, "wb") as data:
+                path = file_name.replace(os.path.basename(file_name), '')
+                
+                if path:
 
+                    path = os.path.join(self.working_dir, path)
+
+                    if os.path.exists(path=path) == False:
+                        os.mkdir(path,)
+                        logger.info("Success: %s mkdir:" % path)
+                        print('mkdir:', path)
+
+                    else:
+                        logger.info("iSpath: %s no mkdir done:" % path)
+                        print("iSpath:", path)
+                        
+                else:
+                    print("no sub dir")
+                    pass 
+                
+                blob_client = BlobClient.from_connection_string(conn_str=self.conn_str, container_name=self.container, blob_name=file_name)
+                  
+                with open(self.working_dir + file_name.replace('/', '\\'), "wb") as data:
+                                    
                     blob_data = blob_client.download_blob()
                     blob_data.readinto(data)
                     response = f'Downloaded: {blob_data.properties}'
@@ -282,8 +323,11 @@ class AZBlobStorage:
             blob_names = blob_client.list_blobs()
             
             for blob in blob_names:
-        
-                cloud_list[blob.name] = blob.last_modified.timestamp()
+                
+                blob_name = blob.name
+                blob_name = blob_name.replace("/", "\\")
+                
+                cloud_list[blob_name] = blob.last_modified.timestamp()
         
         except AzureError as err:
             logger.error(
@@ -300,14 +344,20 @@ class AZBlobStorage:
         
         cloud_list = {}
         
+        #for file in query_list:
+            
+        
         try:
             blob_service_client = BlobServiceClient.from_connection_string(conn_str=self.conn_str)
             blob_client = blob_service_client.get_container_client(container=self.container)
             blob_names = blob_client.list_blobs()
-            
+            #pdb.set_trace()
             for blob in blob_names:
-                if blob.name in query_list:
-                    cloud_list[blob.name] = blob.last_modified.timestamp()
+                blob_name = blob.name
+                blob_name = blob_name.replace("/", "\\")
+                print(blob_name)
+                if blob_name in query_list:
+                    cloud_list[blob_name] = blob.last_modified.timestamp()
         
         except AzureError as err:
             logger.error(
@@ -323,10 +373,11 @@ if __name__ == "__main__":
 
     
     # Vars
-    conn_str = "string"
+    params = config()
+    conn_str = params["conn_str"]
     
     # Testing Class
-    test = AZBlobStorage(conn_str=conn_str, container='file-sync-test', working_dir='c:\\Users\\Kevin\\bigtime007-github\\Azure file backup\\BACKUP-FOLDER\\')
+    test = AZBlobStorage(conn_str=conn_str, container='file-sync-test', working_dir='c:\\Users\\Kevin\\bigtime007-github\\Azure file backup DEV ONLY\\BACKUP-FOLDER\\')
     
     #AZBlobStorage.create_container(new_container="file-snyc-test-1312112")
     #AZBlobStorage.delete_container(container="file-snyc-test-1312112")
@@ -334,12 +385,13 @@ if __name__ == "__main__":
     #print(test.put_file('/testfile.txt'))
     #print(test.put_list(file_list=['\\file2.txt', '\\testfile.txt']))
     #test.put_file('New Text Document.txt')
-    #test.put_list(['New Text Document.txt'])
+    #test.put_list(['New folder\\New Text Document.txt'])
     #print(test.get_file("\\New Text Document.txt"))
     #print(test.get_list(['New Text Document.txt']))
-    #print(test.get_list(['New folder\\New Text Document.txt']))
+    #print(test.get_list(['New folder\\New Text Document.txt','New folder\\New Text Document (2).txt']))
     #print(test.delete_object('/testfile.txt'))
-    #print(test.delete_list(del_list=['foler example\\file3.txt']))
+    ##print(test.delete_list(del_list=['New folder\\New Text Document.txt']))
     #print(test.delete_list(del_list=['\\storagetool.py', '\\testfile.txt']))
 
-    print(test.blob_file_select_time_list(['New Text Document.txt']))
+    print(test.blob_file_select_time_list(['Test Folder\\bookmarks.txt']))
+    #print(test.blob_file_time_list)
