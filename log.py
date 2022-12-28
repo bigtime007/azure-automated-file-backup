@@ -1,6 +1,6 @@
 import logging
 
-def setup_logger(logger_name:str=__name__, logfile:str='app.log'):
+def setup_logger(logger_name:str=__name__, logfile:str='log.log'):
     """ Standard Logging: std out and log file.
         1.creates file handler which logs even debug messages: fh
         2.creates console handler with a higher log level: ch
