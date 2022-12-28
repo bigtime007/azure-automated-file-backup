@@ -1,21 +1,13 @@
-# https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/storage/azure-storage-blob/samples
+# https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/storage/azure-storage-blob/samplessto
+
+import os
+from config import config
+from log import setup_logger
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import AzureError
 from azure.storage.blob import BlobClient
-import logging, os, pdb
-from config import config
 
-log_name = 'app.log'
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)   
-formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s', 
-                            '%m-%d-%Y %H:%M:%S')
-
-file_handler = logging.FileHandler(log_name)
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
+logger=setup_logger(__name__)
 
 class AZBlobStorage:
     
@@ -32,7 +24,7 @@ class AZBlobStorage:
         
     
     @staticmethod
-    def create_container(new_container):
+    def create_container(new_container) ->str:
         """Creates AZ container @staticmethod
         
         :param new_container: new container string
@@ -48,15 +40,15 @@ class AZBlobStorage:
             raise
         
         finally:
-            logging.info(response)
-            logging.info(response.url)
-            logging.info(response.account_name)
-            logging.info(response.close) 
+            logger.info(response)
+            logger.info(response.url)
+            logger.info(response.account_name)
+            logger.info(response.close) 
             return f'AZ Container:{new_container} Creation Completed'
         
     
     @staticmethod
-    def delete_container(container):
+    def delete_container(container) ->str:
         """Deletes AZ container @staticmethod
         
         :param container: container string
@@ -72,15 +64,15 @@ class AZBlobStorage:
             raise
         
         finally:
-            logging.info(response)
-            logging.info(response.url)
-            logging.info(response.account_name)
-            logging.info(response.close) 
-            logging.info(f'AZ Container Deletion Completed: {container}')
+            logger.info(response)
+            logger.info(response.url)
+            logger.info(response.account_name)
+            logger.info(response.close) 
+            logger.info(f'AZ Container Deletion Completed: {container}')
             return f'AZ Container:{container} Deletion Completed'
 
           
-    def put_file(self, file_name):
+    def put_file(self, file_name) ->str:
         """Uploads or Puts a singe file to container.
         
         Args:
@@ -96,7 +88,7 @@ class AZBlobStorage:
             with open(self.working_dir + "\\" + file_name, 'rb') as file_data:
                 response = blob_client.upload_blob(file_data, overwrite=True)
             
-            logging.info(f'Upload: {file_name}: {response}')
+            logger.info(f'Upload: {file_name}: {response}')
             
         except AzureError as err:
             logger.error(
@@ -107,7 +99,7 @@ class AZBlobStorage:
         return f"Uploaded: {file_name}: {response}"
             
      
-    def put_list(self, file_list):
+    def put_list(self, file_list) ->list:
         """Uploads or Puts a list of files to container
         
         Args:
@@ -129,7 +121,7 @@ class AZBlobStorage:
                     response = blob_client.upload_blob(file_data, overwrite=True)
 
                 response_list.append(f'Upload: {file}: {response}')
-                logging.info(f'Upload: {response_list}')
+                logger.info(f'Upload: {response_list}')
         
         except AzureError as err:
             logger.error(
@@ -142,7 +134,7 @@ class AZBlobStorage:
     
     
     # Delete single file from AZ container
-    def delete_object(self, blob):
+    def delete_object(self, blob) -> str:
         """Deletes Single blob in AZ Container
         
         Args:
@@ -158,7 +150,7 @@ class AZBlobStorage:
 
             if response is None:
                 response = f'Deletion Successful: {blob}'
-                logging.info(response)
+                logger.info(response)
             
         except AzureError as err:
             logger.error(
@@ -171,7 +163,7 @@ class AZBlobStorage:
     
     
     # Delete list of files from AZ container
-    def delete_list(self, del_list):
+    def delete_list(self, del_list) ->list:
         """Deletes a list of blobs from container
         
         Args:
@@ -181,7 +173,6 @@ class AZBlobStorage:
             list(): Call Back Status
         """
         response_list = []
-        
         try:
             for blob in del_list:
                 
@@ -191,8 +182,8 @@ class AZBlobStorage:
                 response = blob_client.delete_blob(blob)
 
                 if response is None:
-                    response = f'Deletion Successful: {blob}'
-                    logging.info(response)
+                    response = f'Blob Deletion Successful: {blob}'
+                    logger.info(response)
                     response_list.append(response)
                           
         except AzureError as err:
@@ -204,11 +195,9 @@ class AZBlobStorage:
         finally:
             return response_list
     
-        
-    
-        
+              
     # Get single Object from AZ
-    def get_file(self, file_name):
+    def get_file(self, file_name) ->str:
         """Gets a single file/blob from container
         
         Args:
@@ -228,25 +217,21 @@ class AZBlobStorage:
                 if os.path.exists(path=path) == False:
                     os.mkdir(path,)
                     logger.info("Success: %s mkdir:" % path)
-                    print('mkdir:', path)
 
                 else:
                     logger.info("iSpath: %s no mkdir done:" % path)
-                    print("iSpath:", path)
                     
             else:
-                print("no sub dir")
+                logger.info(f"no sub dir for: {file_name}")
                 pass 
-            
             
             with open(self.working_dir + file_name, "wb") as data:
                 
                 blob_client = BlobClient.from_connection_string(conn_str=self.conn_str, container_name=self.container, blob_name=file_name)
                 blob_data = blob_client.download_blob()
                 blob_data.readinto(data)
-                
                 response = f'Downloaded: {blob_data.properties}'
-                logging.info(response)
+                logger.info(response)
             
         except AzureError as err:
             logger.error(
@@ -258,8 +243,7 @@ class AZBlobStorage:
             return response
         
     
-    
-    def get_list(self, file_list):
+    def get_list(self, file_list) ->list:
         """Gets/Downloads a list of files/blobs from container
         
         Args:
@@ -269,7 +253,6 @@ class AZBlobStorage:
             FileObject: downloads to specific folder 
         """
         response_list = []
-        
         try:
             
             for file_name in file_list:
@@ -277,20 +260,16 @@ class AZBlobStorage:
                 path = file_name.replace(os.path.basename(file_name), '')
                 
                 if path:
-
                     path = os.path.join(self.working_dir, path)
 
                     if os.path.exists(path=path) == False:
                         os.mkdir(path,)
                         logger.info("Success: %s mkdir:" % path)
-                        print('mkdir:', path)
-
                     else:
                         logger.info("iSpath: %s no mkdir done:" % path)
-                        print("iSpath:", path)
                         
                 else:
-                    print("no sub dir")
+                    logger.info("no sub dir: %s mkdir:" % path)
                     pass 
                 
                 blob_client = BlobClient.from_connection_string(conn_str=self.conn_str, container_name=self.container, blob_name=file_name)
@@ -300,7 +279,7 @@ class AZBlobStorage:
                     blob_data = blob_client.download_blob()
                     blob_data.readinto(data)
                     response = f'Downloaded: {blob_data.properties}'
-                    logging.info(response)
+                    logger.info(response)
                     response_list.append(response)
             
         except AzureError as err:
@@ -314,7 +293,7 @@ class AZBlobStorage:
 
     
     @property
-    def blob_file_time_list(self):
+    def blob_file_time_list(self) ->list:
         
         cloud_list = {}
         try:
@@ -326,9 +305,8 @@ class AZBlobStorage:
                 
                 blob_name = blob.name
                 blob_name = blob_name.replace("/", "\\")
-                
                 cloud_list[blob_name] = blob.last_modified.timestamp()
-        
+
         except AzureError as err:
             logger.error(
                 "Couldn't get AZ object %s. Here's why: %s: %s", cloud_list,
@@ -337,25 +315,19 @@ class AZBlobStorage:
             
         finally:
             return cloud_list
-
         
 
-    def blob_file_select_time_list(self, query_list):
+    def blob_file_select_time_list(self, query_list) ->list:
         
-        cloud_list = {}
-        
-        #for file in query_list:
-            
-        
+        cloud_list = {}    
         try:
             blob_service_client = BlobServiceClient.from_connection_string(conn_str=self.conn_str)
             blob_client = blob_service_client.get_container_client(container=self.container)
             blob_names = blob_client.list_blobs()
-            #pdb.set_trace()
+
             for blob in blob_names:
                 blob_name = blob.name
                 blob_name = blob_name.replace("/", "\\")
-                print(blob_name)
                 if blob_name in query_list:
                     cloud_list[blob_name] = blob.last_modified.timestamp()
         
