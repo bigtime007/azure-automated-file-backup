@@ -9,7 +9,11 @@ class INICreator:
     """Creates config.ini for app configuration.
     """
     def __init__(self, file_name:str='config.ini') -> None:
-        
+        """_summary_Creates config.ini file
+
+        Args:
+            file_name (str, optional): _description_file name config.ini. Defaults to 'config.ini'.
+        """
         self.file_name = file_name
         self.config = configparser.ConfigParser()
 
