@@ -1,17 +1,6 @@
-"""
-log_name = 'app.log'
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)   
-formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s', 
-                            '%m-%d-%Y %H:%M:%S')
-file_handler = logging.FileHandler(log_name)
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-"""
 import logging
 
-def setup_logger(logger_name:str=__name__, logfile:str='log.log'):
+def setup_logger(logger_name:str=__name__, logfile:str='app.log'):
     """ Standard Logging: std out and log file.
         1.creates file handler which logs even debug messages: fh
         2.creates console handler with a higher log level: ch
