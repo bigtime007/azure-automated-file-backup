@@ -103,9 +103,10 @@ if __name__ == "__main__":
     setup.create_file
     
     from config import config
-    params = config(filename="config-sample.ini")
+    params = config(filename="config.ini")
 
     az = CreateAZResource(**params)
     az.create_db
     az.db_container
     az.create_sto_container
+    
