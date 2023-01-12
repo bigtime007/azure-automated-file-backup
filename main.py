@@ -1,8 +1,3 @@
-"""
-***Know Bugs*** (1.) When windows Office changes file initially the will look like the following => '~$w Microsoft Word Document.docx'
-when in fact should be => 'New Microsoft Word Document.docx' when os scans the dir it will find this 
-and report a change and then update file to find its now missing and throw a error:
-"""
 import os, time, json
 from config import config
 from log import setup_logger
@@ -12,11 +7,8 @@ from azCosmosContainer import AzCosmosContainer
 logger=setup_logger(__name__)
 
 class FileTracker:
-    """
-    Tracks assigned folder for add, delete, and file changes. 
+    """Tracks assigned folder for add, delete, and file changes. 
     When detected executes upload to AZ Storage and places a record of files in CosmosDB of blob storage.
-    Has State Lock Feature which allows for more than one client share the same S3 bucket.
-    This feature is controlled by entry in state_lock table.
     """
     def __init__(self, 
                  working_dir: str, t_sec: str, conn_str: str, sto_container: str, 
@@ -26,7 +18,13 @@ class FileTracker:
 
         Args:
             working_dir (str): Example: 'c:\\Users\\User123\\backup-folder'
-            t_sec (int): time in seconds
+            t_sec (str): time in seconds
+            conn_str (str): Azure Blob Storage Connection String
+            sto_container (str): Storage Actual Name
+            db_name (str): Database Name in Azure CosmosDB
+            uri (str): URI for CosmosDB connection
+            key (str): Unique Key as Per Azure Acct.
+            db_container (str): CosmosDB Actual Name
         """
         self.working_dir = working_dir
         self.t_sec = int(t_sec) 
@@ -52,26 +50,40 @@ class FileTracker:
         
         
     @property   
-    def file_list(self):
-        """ Creates a list of all files.
+    def file_list(self) -> list:
+        """Creates a list of all files.
             Lists: Pwd and Sub-folder files, including hidden.           
-            Requires: library's os, time        
+ 
+        Returns:
+            list: A list of path/file_name for working_dir
         """
         return [os.path.join(dirpath, file).replace(self.working_dir, "") for (
             dirpath, dirnames, filenames) in os.walk(self.working_dir) for file in filenames]
         
         
     @property
-    def file_time_list(self):
+    def file_time_list(self) -> dict:
+        """Creates a Dictionary of filenames as key and os time for values
 
+        Returns:
+            dict: {"path/filename": float}
+        """
         file_list = self.file_list
         time_list = [os.path.getmtime(self.working_dir+file) for file in file_list]
         
         return dict(zip(file_list, time_list))
     
     
-    def file_select_times(self, file_list: list, after_local: dict):
-        
+    def file_select_times(self, file_list: list, after_local: dict) ->dict:
+        """Updates after_local dictionary items
+
+        Args:
+            file_list (list): List of files ["path/filename"]
+            after_local (dict): Existing file time list
+
+        Returns:
+            dict: Updated after_local
+        """
         time_list = [os.path.getmtime(self.working_dir+file) for file in file_list]
         update_after = dict(zip(file_list, time_list))
         after_local.update(update_after)
@@ -80,33 +92,45 @@ class FileTracker:
     
     
     @property
-    def before_save_local(self):
+    def before_save_local(self) -> dict:
+        """Loads file name self.record_name
+
+        Returns:
+            dict: {"filename": filetime}
+        """
         try: 
             with open(self.record_name, 'r') as data:
                 out = json.loads(data.read())
 
-        except FileNotFoundError:
-            logger.error("Failed: %s file not found" % self.record_name)
+        except Exception as err:
+            logger.error("Failed: %s Issue:" % err)
 
         return out
     
     
-    def after_save_local(self, save):
-        
+    def after_save_local(self, save:dict) ->None:
+        """Saves self.record_name
+
+        Args:
+            save (dict): {"filename": filetime}
+        """
         record = json.dumps(save)
         try:
             with open(self.record_name, 'w') as data:
                 data.write(record)
 
-        except FileNotFoundError:
-            logger.error("Failed: %s file not found" % self.record_name)
+        except Exception as err:
+            logger.error("Failed: %s Issue" % err)
     
     
-    def delete_files(self, file_list): 
-        
+    def delete_files(self, file_list:dict) ->None: 
+        """Deletes Local Files.
+
+        Args:
+            file_list (dict): {"filename": filetime}
+        """
         for file in file_list:
 
-                
             # Format path
             file_path = os.path.join(self.working_dir, file)
             # If file exists, delete it.
@@ -126,13 +150,11 @@ class FileTracker:
                 
     
     @property
-    def backup_svc(self):
-        """ Summary:
-        Detects file changes: add, remove, changed.
-        Requires time setting: t_sec in seconds.
-        Puts or deletes objects based on differences from before and after variable.
-        'before' var. is created by scanning DB table, after by local file dir.
-            Returns:            
+    def backup_svc(self) ->None:
+        """Compares the state of the files from the last time the script was run, 
+        and compares it with the current state of the files to detect changes, 
+        ensuring that the files in the cloud storage 
+        and the files in the local storage are always in sync.
         """
         before_local = self.before_save_local
         after_local = self.file_time_list
@@ -180,9 +202,9 @@ class FileTracker:
         ####################################################
         # What existing files have changed in Cloud since last scan
         if file_time_changed_cloud:
-        # Action: upload to Storage 
+        # Action: Download from Storage 
             logger.info(f"|3| Cloud Changed: {file_time_changed_cloud.keys()}")
-            # Function to add files to Storage
+            # Function to add files from Storage
             self.storage_resource.get_list(file_time_changed_cloud.keys())
             # updates local record
             self.file_select_times(file_list=file_time_changed_cloud.keys(), after_local=after_local)
@@ -225,7 +247,7 @@ class FileTracker:
             print('-----------------------------------------------------------------------------------')
                
         self.after_save_local(after_local) # Saves Changes to after_local
-                
+              
         logger.info(f'Local Directory file count after: {len(after_local)}')
         print('-----------------------------------------------------------------------------------')
         logger.info(f'All Done waiting:{self.t_sec} seconds.')
