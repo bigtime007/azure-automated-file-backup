@@ -26,7 +26,7 @@ class AzCosmosContainer:
         self.database_name = database_name
         self.container = None
         self.partitionkey = "/partitionKey"
-
+        self.database = None
     
     @property
     def create_load_db(self):
@@ -36,14 +36,15 @@ class AzCosmosContainer:
             self.database = self.client.create_database_if_not_exists(
                 id=self.database_name
                 )            
+            logger.info(f'Created or Loaded DB: {self.database_name}')
 
         except AzureError as err:
             logger.error(
                 "Couldn't create table %s. Here's why: %s: %s", self.container_name,
                 err.message['Error']['Code'], err.message['Error']['Message'])
             raise
-
     
+
     @property
     def create_load_container(self):
         """Creates Container or loads if it exists.
@@ -53,7 +54,8 @@ class AzCosmosContainer:
                 id=self.container_name, 
                 partition_key=PartitionKey(path=self.partitionkey)
                 )
-            
+            logger.info(f'Created or Loaded DB Container: {self.container_name}')
+
         except AzureError as err:
             logger.error(
                 "Couldn't create table %s. Here's why: %s: %s", self.container_name,

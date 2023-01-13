@@ -23,51 +23,47 @@ class AZBlobStorage:
         self.container = container
         
     
-    @staticmethod
-    def create_container(new_container) ->str:
-        """Creates AZ container @staticmethod
+    def create_container(self,new_container) ->str:
+        """Creates AZ container 
         
         :param new_container: new container string
         """
         try:
-            blob_service_client = BlobServiceClient.from_connection_string(conn_str=conn_str)
+            blob_service_client = BlobServiceClient.from_connection_string(conn_str=self.conn_str)
             response = blob_service_client.create_container(new_container)
 
-        except AzureError as err:
-            logger.error(
-                "Couldn't create AZ container %s. Here's why: %s: %s", new_container,
-                err.message['Error']['Code'], err.message['Error']['Message'])
-            raise
-        
-        finally:
-            logger.info(response)
             logger.info(response.url)
             logger.info(response.account_name)
             logger.info(response.close) 
             return f'AZ Container:{new_container} Creation Completed'
-        
+
+        except AzureError as err:
+            logger.error(
+                "Couldn't create AZ container %s. Here's why: %s ", 
+                new_container,
+                err.message)
+            #raise
+          
     
-    @staticmethod
-    def delete_container(container) ->str:
-        """Deletes AZ container @staticmethod
+    def delete_container(self, container) ->str:
+        """Deletes AZ container 
         
         :param container: container string
         """        
         try:
-            blob_service_client = BlobServiceClient.from_connection_string(conn_str=conn_str)
+            blob_service_client = BlobServiceClient.from_connection_string(conn_str=self.conn_str)
             response = blob_service_client.delete_container(container=container)
         
         except AzureError as err:
             logger.error(
-                "Couldn't delete AZ container %s. Here's why: %s: %s", container,
-                err.message['Error']['Code'], err.message['Error']['Message'])
-            raise
+                "Couldn't delete AZ container %s. Here's why: %s ", 
+                container,
+                err.message)
         
         finally:
             logger.info(response)
             logger.info(response.url)
-            logger.info(response.account_name)
-            logger.info(response.close) 
+            logger.info(response.account_name) 
             logger.info(f'AZ Container Deletion Completed: {container}')
             return f'AZ Container:{container} Deletion Completed'
 
@@ -92,8 +88,9 @@ class AZBlobStorage:
             
         except AzureError as err:
             logger.error(
-                "Couldn't put AZ object %s. Here's why: %s: %s", file_name,
-                err.message['Error']['Code'], err.message['Error']['Message'])
+                "Couldn't put AZ object %s. Here's why: %s. Here's why: %s ", 
+                file_name,
+                err.message)
             raise
            
         return f"Uploaded: {file_name}: {response}"
@@ -125,8 +122,9 @@ class AZBlobStorage:
         
         except AzureError as err:
             logger.error(
-                "Couldn't put AZ object %s. Here's why: %s: %s", file_list,
-                err.message['Error']['Code'], err.message['Error']['Message'])
+                "Couldn't put AZ object %s. Here's why: %s ", 
+                file_list,
+                err.message)
             raise
         
         finally:     
@@ -154,8 +152,9 @@ class AZBlobStorage:
             
         except AzureError as err:
             logger.error(
-                "Couldn't delete AZ object %s. Here's why: %s: %s", blob,
-                err.message['Error']['Code'], err.message['Error']['Message'])
+                "Couldn't delete AZ object %s. Here's why: %s ", 
+                blob,
+                err.message)
             raise
         
         finally:
@@ -188,8 +187,9 @@ class AZBlobStorage:
                           
         except AzureError as err:
             logger.error(
-                "Couldn't delete AZ object %s. Here's why: %s: %s", del_list,
-                err.message['Error']['Code'], err.message['Error']['Message'])
+                "Couldn't delete AZ object %s. %s. Here's why: %s ", 
+                del_list,
+                err.message)
             raise
         
         finally:
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     # Testing Class
     test = AZBlobStorage(conn_str=conn_str, container='file-sync-test', working_dir='c:\\Users\\Kevin\\bigtime007-github\\Azure file backup DEV ONLY\\BACKUP-FOLDER\\')
     
-    #AZBlobStorage.create_container(new_container="file-snyc-test-1312112")
+    test.create_container(new_container="file-snyc-test-1312112")
     #AZBlobStorage.delete_container(container="file-snyc-test-1312112")
     print(test.blob_file_time_list)
     #print(test.put_file('/testfile.txt'))
@@ -365,5 +365,5 @@ if __name__ == "__main__":
     ##print(test.delete_list(del_list=['New folder\\New Text Document.txt']))
     #print(test.delete_list(del_list=['\\storagetool.py', '\\testfile.txt']))
 
-    print(test.blob_file_select_time_list(['Test Folder\\bookmarks.txt']))
+    #print(test.blob_file_select_time_list(['Test Folder\\bookmarks.txt']))
     #print(test.blob_file_time_list)
