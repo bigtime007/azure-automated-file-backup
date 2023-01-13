@@ -8,3 +8,7 @@ Note: Create a unique cosmosDB Container names for each user; example: file-trac
 To assist with configuration, I created a setup.py to automate the creation of config.ini; config-sample.ini is only for reference.
 
 
+Windows 10 Issue: 
+***Know Bugs***  When windows Office changes file initially the will look like the following => '~$w Microsoft Word Document.docx'
+when in fact should be => 'New Microsoft Word Document.docx' when os scans the dir it will find this 
+and report a change and then update file to find its now missing and throw a error:
