@@ -3,6 +3,8 @@ This script is designed to keep track of the files in the specified folder. It c
 
 Requires: Azure Account, CosmosDB URI, key, and Storage Container String. All must be created before running the setup script. Additionally, Splunk HEC needs to be configured with: a custom index, HEC created, and Currently Pushes log events to Splunk HTTP Event Collector. 
 
+Note: Create a unique cosmosDB Container names for each user; example: file-tracker, file-tracker-2
+
 To assist with configuration, I created a setup.py to automate the creation of config.ini; config-sample.ini is only for reference.
 
 
