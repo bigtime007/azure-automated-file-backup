@@ -16,7 +16,19 @@ class INICreator:
         """
         self.file_name = file_name
         self.config = configparser.ConfigParser()
+        self.record_name = 'after-before-record.txt'
 
+    @property
+    def create_local_db(self) ->None:
+        """Creates local file for tracking file changes.
+        """
+        try:
+            with open(self.record_name, 'x') as f:
+                f.write()
+                logger.info(f"Created: {self.record_name} File")
+        except Exception as err:
+            logger.error(f"Failed: {err}")
+            
     @property    
     def create_config(self) -> object:
         """Allows for User to input strings for config
@@ -28,6 +40,24 @@ class INICreator:
 
         config = dict(zip(config_list, [input(f'{i}: ') for i in config_list ]))
         self.config["config"] = config
+
+        print(config)
+        logger.info('Created Config and User input accepted')
+
+        return self.config
+
+    @property    
+    def create_splunk_log_config(self) -> object:
+        """Allows for User to input strings for Splunk Log config
+
+        Returns:
+            object: Returns Modified ConfigParser object.
+        """
+        
+        config_list = ["url","headers","index"]
+
+        config = dict(zip(config_list, [input(f'{i}: ') for i in config_list ]))
+        self.config["splunk_log_config"] = config
 
         print(config)
         logger.info('Created Config and User input accepted')
@@ -56,7 +86,6 @@ class CreateAZResource:
         
         self.working_dir = working_dir
         self.t_sec = int(t_sec) 
-        self.record_name = 'after-before-record.txt'
         
         self.sto_container = sto_container
         self.conn_str = conn_str
@@ -75,22 +104,22 @@ class CreateAZResource:
    
 
     @property
-    def create_db(self) -> exec:
+    def create_db(self) -> None:
         """Cosmos DB Database Creator
 
         Returns:
-            exec: Creates DB
+            None: Creates DB
         """
         self.db_resource.create_load_db
         self.db_resource.create_load_container
 
 
     @property
-    def create_sto_container(self) -> exec:
+    def create_sto_container(self) -> None:
         """Cosmos DB Container Creator for DB.
 
         Returns:
-            exec: Creates Container.
+            None: Creates Container.
         """
         self.storage_resource.create_container(new_container=self.sto_container)
         
@@ -100,10 +129,12 @@ if __name__ == "__main__":
     #setup = INICreator('config-sam.ini')
     setup = INICreator()
     setup.create_config
+    setup.create_splunk_log_config
     setup.create_file
+    setup.create_local_db
     
     from config import config
-    params = config(filename="config.ini")
+    params = config(filename="config-sample.ini")
 
     az = CreateAZResource(**params)
     az.create_db

@@ -128,5 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Block config.ini
+# Block config.ini "Sensitive data"
 config.ini
